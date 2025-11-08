@@ -7,7 +7,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 $user_id = $_SESSION['user_id'];
 
 // --- 2. Include the FPDF Library ---
-require('fpdf.php'); 
+require('fpdf.php');
 
 // --- 3. Get Invoice ID from URL ---
 if (!isset($_GET['id'])) {
@@ -16,14 +16,7 @@ if (!isset($_GET['id'])) {
 $invoice_id = (int)$_GET['id'];
 
 // --- 4. Database Connection ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "invoicer_db";
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+require_once 'db.php';
 
 // --- 5. Fetch ALL Data for the Invoice ---
 
@@ -39,7 +32,7 @@ if (!$my_company) {
 }
 
 // B. Get Invoice Details & Customer Details (2-in-1 query)
-$sql_invoice = "SELECT i.*, c.company_name, c.address, c.gstin, c.state, c.state_code 
+$sql_invoice = "SELECT i.*, c.company_name, c.address, c.gstin, c.state, c.state_code
                 FROM invoices i
                 JOIN companies c ON i.company_id = c.id
                 WHERE i.id = ? AND i.user_id = ?";
@@ -53,7 +46,7 @@ if (!$invoice) {
 }
 
 // C. Get Invoice Items (many items)
-$sql_items = "SELECT ii.*, p.product_name 
+$sql_items = "SELECT ii.*, p.product_name
               FROM invoice_items ii
               JOIN products p ON ii.product_id = p.id
               WHERE ii.invoice_id = ?";
@@ -70,7 +63,7 @@ $conn->close();
 class PDF extends FPDF {
     var $my_company;
     var $invoice_tagline;
-    
+
     // Brand colors
     var $primary_color = array(33, 150, 243);      // Modern Blue
     var $secondary_color = array(13, 71, 161);     // Dark Blue
@@ -78,7 +71,7 @@ class PDF extends FPDF {
     var $light_bg = array(245, 248, 250);          // Light blue-gray
     var $table_header = array(25, 118, 210);       // Rich blue
     var $table_alt = array(250, 250, 252);         // Very light gray
-    
+
     // Rounded rectangle function
     function RoundedRect($x, $y, $w, $h, $r, $style = '') {
         $k = $this->k;
@@ -109,7 +102,7 @@ class PDF extends FPDF {
         $this->_Arc($xc - $r, $yc - $r*$MyArc, $xc - $r*$MyArc, $yc - $r, $xc, $yc - $r);
         $this->_out($op);
     }
-    
+
     function _Arc($x1, $y1, $x2, $y2, $x3, $y3) {
         $h = $this->h;
         $this->_out(sprintf('%.2F %.2F %.2F %.2F %.2F %.2F c ', $x1*$this->k, ($h-$y1)*$this->k,
@@ -121,31 +114,31 @@ class PDF extends FPDF {
         // Top colored band
         $this->SetFillColor($this->primary_color[0], $this->primary_color[1], $this->primary_color[2]);
         $this->Rect(0, 0, 210, 8, 'F');
-        
+
         $this->Ln(12);
-        
+
         // Company section with background box
         $this->SetFillColor($this->light_bg[0], $this->light_bg[1], $this->light_bg[2]);
         $this->RoundedRect(10, $this->GetY(), 120, 35, 3, 'F');
-        
+
         $this->SetXY(15, $this->GetY() + 3);
-        
+
         // Company Name in brand color
         $this->SetFont('Arial', 'B', 18);
         $this->SetTextColor($this->secondary_color[0], $this->secondary_color[1], $this->secondary_color[2]);
         $this->Cell(110, 7, strtoupper($this->my_company['company_name']), 0, 1, 'L');
-        
+
         $this->SetX(15);
         $this->SetFont('Arial', '', 9);
         $this->SetTextColor(70, 70, 70);
-        
+
         // Address with icon simulation
         $address = $this->my_company['address'] ?? 'N/A';
         $x = 15;
         $y = $this->GetY();
         $this->SetXY($x, $y);
         $this->MultiCell(110, 4, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $address), 0, 'L');
-        
+
         $this->SetX(15);
         $this->SetFont('Arial', '', 8);
         $this->Cell(110, 4, "GSTIN: " . $this->my_company['gstin'], 0, 1, 'L');
@@ -155,16 +148,16 @@ class PDF extends FPDF {
         // --- INVOICE Title Box ---
         $this->SetY(20);
         $this->SetX(140);
-        
+
         // Invoice badge
         $this->SetFillColor($this->secondary_color[0], $this->secondary_color[1], $this->secondary_color[2]);
         $this->RoundedRect(135, 20, 65, 30, 3, 'F');
-        
+
         $this->SetXY(140, 22);
         $this->SetFont('Arial', 'B', 26);
         $this->SetTextColor(255, 255, 255);
         $this->Cell(55, 10, 'INVOICE', 0, 1, 'C');
-        
+
         $this->SetXY(140, 32);
         $this->SetFont('Arial', '', 8);
         $this->SetTextColor(220, 220, 220);
@@ -176,30 +169,30 @@ class PDF extends FPDF {
     // Enhanced Footer
     function Footer() {
         $this->SetY(-25);
-        
+
         // Decorative line with gradient effect
         $this->SetDrawColor($this->primary_color[0], $this->primary_color[1], $this->primary_color[2]);
         $this->SetLineWidth(0.8);
         $this->Line(10, $this->GetY(), 200, $this->GetY());
-        
+
         $this->Ln(3);
-        
+
         $this->SetFont('Arial', 'I', 8);
         $this->SetTextColor(100, 100, 100);
-        
+
         // Tagline on left
         $this->Cell(95, 4, $this->invoice_tagline, 0, 0, 'L');
-        
+
         // Page number in center
         $this->SetTextColor($this->primary_color[0], $this->primary_color[1], $this->primary_color[2]);
         $this->Cell(95, 4, 'Page ' . $this->PageNo(), 0, 0, 'R');
-        
+
         $this->Ln(5);
         $this->SetFont('Arial', '', 7);
         $this->SetTextColor(120, 120, 120);
         $this->Cell(0, 3, 'This is a computer-generated invoice and does not require a physical signature.', 0, 0, 'C');
     }
-    
+
     // Enhanced Table with modern styling
     function ItemTable($header, $data) {
         // Table header with gradient-like effect
@@ -208,43 +201,43 @@ class PDF extends FPDF {
         $this->SetTextColor(255, 255, 255);
         $this->SetFont('Arial', 'B', 9);
         $this->SetLineWidth(0.3);
-        
+
         // Column widths
         $w = array(15, 85, 20, 35, 35);
-        
+
         // Header with rounded top
         for($i=0; $i<count($header); $i++) {
             $this->Cell($w[$i], 8, $header[$i], 1, 0, 'C', true);
         }
         $this->Ln();
-        
+
         // Data rows with alternating colors
         $this->SetFont('Arial', '', 9);
         $this->SetTextColor(40, 40, 40);
         $fill = false;
         $s_no = 1;
         $subtotal = 0;
-        
+
         foreach($data as $row) {
             $item_total = $row['quantity'] * $row['price_per_unit'];
             $subtotal += $item_total;
-            
+
             // Alternate row colors
             if($fill) {
                 $this->SetFillColor($this->table_alt[0], $this->table_alt[1], $this->table_alt[2]);
             } else {
                 $this->SetFillColor(255, 255, 255);
             }
-            
+
             $this->Cell($w[0], 7, $s_no++, 'LR', 0, 'C', true);
             $this->Cell($w[1], 7, iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $row['product_name']), 'LR', 0, 'L', true);
             $this->Cell($w[2], 7, $row['quantity'], 'LR', 0, 'C', true);
             $this->Cell($w[3], 7, number_format($row['price_per_unit'], 2), 'LR', 0, 'R', true);
             $this->Cell($w[4], 7, number_format($item_total, 2), 'LR', 1, 'R', true);
-            
+
             $fill = !$fill;
         }
-        
+
         // Table bottom border
         $this->Cell(array_sum($w), 0, '', 'T');
         return $subtotal;
@@ -366,7 +359,7 @@ if ((float)$invoice['igst_amount'] > 0) {
 } else {
     $pdf->Cell(40, 6, 'CGST', 0, 0, 'L');
     $pdf->Cell(40, 6, 'Rs. ' . number_format($invoice['cgst_amount'], 2), 0, 1, 'R');
-    
+
     $pdf->SetX(115);
     $pdf->Cell(40, 6, 'SGST', 0, 0, 'L');
     $pdf->Cell(40, 6, 'Rs. ' . number_format($invoice['sgst_amount'], 2), 0, 1, 'R');
@@ -424,6 +417,6 @@ $pdf->Cell(80, 5, '(Authorised Signatory)', 'T', 1, 'C');
 $pdf_filename = "Invoice-" . $invoice['invoice_number'] . ".pdf";
 
 // --- 11. Output the PDF ---
-$pdf->Output('D', $pdf_filename); 
+$pdf->Output('D', $pdf_filename);
 exit();
 ?>

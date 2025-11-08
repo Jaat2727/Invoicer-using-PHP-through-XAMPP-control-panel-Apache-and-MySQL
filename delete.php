@@ -15,14 +15,7 @@ $type = $_GET['type'];
 $id = (int)$_GET['id']; // Cast to integer for security
 
 // --- 3. Database Connection ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "invoicer_db";
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+require_once 'db.php';
 
 // --- 4. Prepare SQL based on type ---
 $sql = "";
@@ -48,7 +41,7 @@ if ($stmt->execute()) {
     $_SESSION['form_message'] = "<p class='text-green-600'>Item deleted successfully!</p>";
 } else {
     // Handle foreign key constraint error (e.g., trying to delete a company that has invoices)
-    if ($conn->errno == 1451) { 
+    if ($conn->errno == 1451) {
         $_SESSION['form_message'] = "<p class='text-red-600'>Cannot delete: This item is already used in an invoice.</p>";
     } else {
         $_SESSION['form_message'] = "<p class='text-red-600'>Error: " . $stmt->error . "</p>";

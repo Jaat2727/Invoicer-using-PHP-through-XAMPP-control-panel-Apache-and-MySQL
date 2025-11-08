@@ -5,25 +5,12 @@
 session_start();
 
 // --- 1. Database Connection ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "invoicer_db"; // The database we just created
-
-// Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check connection
-if ($conn->connect_error) {
-    // We send back an error message to the signup.html page
-    header("Location: signup.html?message=error&data=" . urlencode("Database connection failed."));
-    exit();
-}
+require_once 'db.php';
 
 // --- 2. Get Data from Form ---
 // Check if data was sent via POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
+
     // Get the email and password from the form
     $email = $_POST['email'];
     $password = $_POST['password'];
@@ -52,14 +39,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // --- 5. Prepare SQL to Insert User ---
     // We update the SQL to include the new column
     $sql = "INSERT INTO users (email, password_hash, recovery_code) VALUES (?, ?, ?)";
-    
+
     $stmt = $conn->prepare($sql);
 
     if ($stmt === false) {
         header("Location: signup.html?message=error&data=" . urlencode("Error preparing statement."));
         exit();
     }
-    
+
     // "sss" means we are binding three strings: email, pass_hash, recovery_hash
     $stmt->bind_param("sss", $email, $password_hash, $recovery_code_hash);
 
@@ -68,7 +55,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // If it fails (like a duplicate email), we will 'catch' the exception.
     try {
         $stmt->execute();
-        
+
         // --- MODIFIED SUCCESS! ---
         // We give the user the *original* $recovery_code (plain text)
         // while the database only stores the $recovery_code_hash.

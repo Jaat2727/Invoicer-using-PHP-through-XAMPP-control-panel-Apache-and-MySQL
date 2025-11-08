@@ -2,20 +2,11 @@
 // --- This is our reset.php script ---
 
 // --- 1. Database Connection ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "invoicer_db";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    header("Location: reset-password.html?message=error&data=" . urlencode("Database connection failed."));
-    exit();
-}
+require_once 'db.php';
 
 // --- 2. Get Data from Form ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
+
     $email = $_POST['email'];
     $recovery_code = $_POST['recovery_code'];
     $new_password = $_POST['new_password'];
@@ -30,14 +21,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($result->num_rows == 1) {
         // --- 4. User Found, Now Verify Recovery Code ---
         $user = $result->fetch_assoc();
-        
+
         // --- THIS IS THE MAGIC ---
         // We check the plain-text code ($recovery_code) from the form
         // against the hash ($user['recovery_code']) from the database.
         if (password_verify($recovery_code, $user['recovery_code'])) {
-            
+
             // --- 5. CODES MATCH! Reset the password. ---
-            
+
             // Hash the new password
             $new_password_hash = password_hash($new_password, PASSWORD_DEFAULT);
 

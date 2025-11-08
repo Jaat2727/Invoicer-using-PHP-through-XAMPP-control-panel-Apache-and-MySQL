@@ -9,14 +9,7 @@ $user_id = $_SESSION['user_id'];
 $user_email = $_SESSION['user_email'];
 
 // --- 2. Database Connection ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "invoicer_db";
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+require_once 'db.php';
 
 // --- 3. Get Company ID from URL ---
 if (!isset($_GET['id'])) {
@@ -37,20 +30,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $state_code = $_POST['state_code'];
     $address = $_POST['address'];
 
-    $sql = "UPDATE companies SET 
-                company_name = ?, gstin = ?, state = ?, state_code = ?, address = ? 
+    $sql = "UPDATE companies SET
+                company_name = ?, gstin = ?, state = ?, state_code = ?, address = ?
             WHERE id = ? AND user_id = ?";
-    
+
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("sssssii", $company_name, $gstin, $state, $state_code, $address, $company_id, $user_id);
-    
+
     if ($stmt->execute()) {
         $_SESSION['form_message'] = "<p class='text-green-600'>Company updated successfully!</p>";
     } else {
         $_SESSION['form_message'] = "<p class='text-red-600'>Error: " . $stmt->error . "</p>";
     }
     $stmt->close();
-    
+
     // UPDATED: Redirect back to the filtered list
     header("Location: companies.php?" . $query_string);
     exit();
@@ -75,7 +68,7 @@ $conn->close();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>Edit Company - SaaS Invoicer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -89,7 +82,7 @@ $conn->close();
     </style>
 </head>
 <body class="bg-gray-100">
-    
+
     <!-- Navigation Bar -->
     <nav class="bg-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -114,12 +107,12 @@ $conn->close();
 
     <!-- Main Content Area -->
     <div class="max-w-xl mx-auto py-6 sm:px-6 lg:px-8">
-        
+
         <h1 class="text-3xl font-bold text-gray-900 mb-6">Edit Company</h1>
 
         <div class="bg-white shadow-md rounded-lg p-6">
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">Update Company Details</h2>
-            
+
             <!-- UPDATED: Form action now includes the query string -->
             <form action="edit-company.php?id=<?php echo $company_id; ?>&<?php echo $query_string; ?>" method="POST" class="space-y-4">
                 <div>
@@ -130,11 +123,11 @@ $conn->close();
                 </div>
                 <div>
                     <label for="gstin" class="block text-sm font-medium text-gray-700">GSTIN (15 Digits)</label>
-                    <input type="text" id="gstin" name="gstin" 
+                    <input type="text" id="gstin" name="gstin"
                            value="<?php echo htmlspecialchars($company['gstin']); ?>"
                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
                 </div>
-                
+
                 <div>
                     <label for="state" class="block text-sm font-medium text-gray-700">State</label>
                     <select id="state" name="state" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
@@ -150,9 +143,9 @@ $conn->close();
                 </div>
                 <div>
                     <label for="state_code" class="block text-sm font-medium text-gray-700">State Code</label>
-                    <input type="text" id="state_code" name="state_code" 
+                    <input type="text" id="state_code" name="state_code"
                            value="<?php echo htmlspecialchars($company['state_code']); ?>"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-gray-100" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-gray-100"
                            readonly>
                 </div>
                 <div>

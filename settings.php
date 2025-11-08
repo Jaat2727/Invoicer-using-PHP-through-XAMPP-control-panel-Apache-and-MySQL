@@ -9,14 +9,7 @@ $user_id = $_SESSION['user_id'];
 $user_email = $_SESSION['user_email'];
 
 // --- 2. Database Connection ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "invoicer_db";
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+require_once 'db.php';
 
 $form_message = "";
 
@@ -32,7 +25,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $tagline = $_POST['tagline'] ?? '';
     $address = $_POST['address'] ?? '';
     $my_state = $_POST['my_state'] ?? ''; // The 'state' field
-    
+
     // Get tax rates
     $default_cgst_rate = (float)($_POST['default_cgst_rate'] ?? 9.00);
     $default_sgst_rate = (float)($_POST['default_sgst_rate'] ?? 9.00);
@@ -54,11 +47,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 default_cgst_rate = VALUES(default_cgst_rate),
                 default_sgst_rate = VALUES(default_sgst_rate),
                 default_igst_rate = VALUES(default_igst_rate)";
-    
+
     $stmt = $conn->prepare($sql);
     // The bind_param must match all 13 fields (i, 9*s, 3*d)
     $stmt->bind_param("isssssssssddd", $user_id, $company_name, $gstin, $pan, $mobile, $email, $upi_id, $tagline, $address, $my_state, $default_cgst_rate, $default_sgst_rate, $default_igst_rate);
-    
+
     if ($stmt->execute()) {
         $form_message = "<p class='text-green-600'>Settings saved successfully!</p>";
     } else {
@@ -90,9 +83,9 @@ function get_setting($settings, $key) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>My Company Settings - SaaS Invoicer</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -105,7 +98,7 @@ function get_setting($settings, $key) {
     </style>
 </head>
 <body class="bg-gray-100">
-    
+
     <!-- NAVIGATION BAR (Fixed) -->
     <nav class="bg-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -120,6 +113,7 @@ function get_setting($settings, $key) {
                         <a href="products.php" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Products</a>
                         <a href="create-invoice.php" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Create Invoice</a>
                         <a href="invoice-history.php" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Invoice History</a>
+                        <a href="inventory.php" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Inventory</a>
                         <a href="settings.php" class="text-blue-600 border-b-2 border-blue-600 px-3 py-2 text-sm font-medium" aria-current="page">Settings</a>
                     </div>
                 </div>
@@ -142,6 +136,7 @@ function get_setting($settings, $key) {
                 <a href="products.php" class="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Products</a>
                 <a href="create-invoice.php" class="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Create Invoice</a>
                 <a href="invoice-history.php" class="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Invoice History</a>
+                <a href="inventory.php" class="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Inventory</a>
                 <a href="settings.php" class="text-blue-600 block px-3 py-2 rounded-md text-base font-medium" aria-current="page">Settings</a>
             </div>
         </div>
@@ -149,11 +144,11 @@ function get_setting($settings, $key) {
 
     <!-- Main Content Area -->
     <div class="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
-        
+
         <h1 class="text-3xl font-bold text-gray-900 mb-6">My Company Settings</h1>
 
         <form action="settings.php" method="POST" class="space-y-6">
-            
+
             <!-- Form Message -->
             <div id="form-message" class="text-center">
                 <?php echo $form_message; ?>
@@ -163,7 +158,7 @@ function get_setting($settings, $key) {
             <div class="bg-white shadow-md rounded-lg p-6">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-4">Your Company Information</h2>
                 <p class="text-sm text-gray-600 mb-6">This information will appear on all your invoices.</p>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="company_name" class="block text-sm font-medium text-gray-700">Your Company Name</label>
@@ -201,13 +196,13 @@ function get_setting($settings, $key) {
                                value="<?php echo get_setting($settings, 'upi_id'); ?>"
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
                     </div>
-                    
+
                     <!-- Your State -->
                     <div class="col-span-1">
                         <label for="my_state" class="block text-sm font-medium text-gray-700">Your State (for GST)</label>
                         <select id="my_state" name="my_state" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
                             <option value="">Select Your State / UT</option>
-                            <?php 
+                            <?php
                             $states_list = ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"];
                             $current_state = get_setting($settings, 'state');
                             foreach ($states_list as $state) {
@@ -224,7 +219,7 @@ function get_setting($settings, $key) {
                                value="<?php echo get_setting($settings, 'tagline'); ?>"
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
                     </div>
-                    
+
                     <div class="md:col-span-2">
                         <label for="address" class="block text-sm font-medium text-gray-700">Your Address</label>
                         <textarea id="address" name="address" rows="3"
@@ -258,7 +253,7 @@ function get_setting($settings, $key) {
                     </div>
                 </div>
             </div>
-            
+
             <!-- Save Button -->
             <div class="text-right">
                 <button type="submit"
