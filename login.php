@@ -5,20 +5,11 @@
 session_start();
 
 // --- 1. Database Connection ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "invoicer_db";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    header("Location: login.html?message=error&data=" . urlencode("Database connection failed."));
-    exit();
-}
+require_once 'db.php';
 
 // --- 2. Get Data from Form ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
+
     $email = $_POST['email'];
     $password = $_POST['password'];
 
@@ -32,11 +23,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($result->num_rows == 1) {
         // --- 4. User Found, Now Verify Password ---
         $user = $result->fetch_assoc();
-        
+
         // This is the magic!
         // password_verify() compares the plain-text password with the hash in the database.
         if (password_verify($password, $user['password_hash'])) {
-            
+
             // --- 5. PASSWORD IS CORRECT! ---
             // Store user info in the session
             $_SESSION['user_id'] = $user['id'];

@@ -9,14 +9,7 @@ $user_id = $_SESSION['user_id'];
 $user_email = $_SESSION['user_email']; // for the nav bar
 
 // --- 2. Database Connection ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "invoicer_db";
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+require_once 'db.php';
 
 // --- 3. Get Search Parameters ---
 $search_term = $_GET['search'] ?? ''; // Get search term from URL
@@ -24,25 +17,25 @@ $query_string = http_build_query(['search' => $search_term]); // Build query str
 
 // --- 4. Handle Form Submission (Add Company) ---
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['company_name'])) {
-    
+
     $company_name = $_POST['company_name'];
     $gstin = $_POST['gstin'];
     $state = $_POST['state'];
     $state_code = $_POST['state_code'];
     $address = $_POST['address'];
 
-    $sql = "INSERT INTO companies (user_id, company_name, gstin, state, state_code, address) 
+    $sql = "INSERT INTO companies (user_id, company_name, gstin, state, state_code, address)
             VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("isssss", $user_id, $company_name, $gstin, $state, $state_code, $address);
-    
+
     if ($stmt->execute()) {
         $_SESSION['form_message'] = "<p class='text-green-600'>Company added successfully!</p>";
     } else {
         $_SESSION['form_message'] = "<p class='text-red-600'>Error: " . $stmt->error . "</p>";
     }
     $stmt->close();
-    
+
     // Redirect to prevent form resubmission
     header("Location: companies.php?" . $query_string);
     exit();
@@ -85,9 +78,9 @@ $conn->close();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>Manage Companies - SaaS Invoicer</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -100,7 +93,7 @@ $conn->close();
     </style>
 </head>
 <body class="bg-gray-100">
-    
+
     <!-- UPDATED NAVIGATION BAR -->
     <nav class="bg-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -115,6 +108,7 @@ $conn->close();
                         <a href="products.php" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Products</a>
                         <a href="create-invoice.php" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Create Invoice</a>
                         <a href="invoice-history.php" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Invoice History</a>
+                        <a href="inventory.php" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Inventory</a>
                         <a href="settings.php" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Settings</a>
                     </div>
                 </div>
@@ -137,6 +131,7 @@ $conn->close();
                 <a href="products.php" class="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Products</a>
                 <a href="create-invoice.php" class="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Create Invoice</a>
                 <a href="invoice-history.php" class="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Invoice History</a>
+                <a href="inventory.php" class="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Inventory</a>
                 <a href="settings.php" class="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium">Settings</a>
             </div>
         </div>
@@ -144,16 +139,16 @@ $conn->close();
 
     <!-- Main Content Area (Unchanged) -->
     <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        
+
         <h1 class="text-3xl font-bold text-gray-900 mb-6">Manage Your Companies (Customers)</h1>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+
             <!-- Left Column: Add New Company Form -->
             <div class="lg:col-span-1">
                 <div class="bg-white shadow-md rounded-lg p-6">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add New Company</h2>
-                    
+
                     <form action="companies.php?<?php echo $query_string; ?>" method="POST" class="space-y-4">
                         <div>
                             <label for="company_name" class="block text-sm font-medium text-gray-700">Company Name</label>
@@ -162,10 +157,10 @@ $conn->close();
                         </div>
                         <div>
                             <label for="gstin" class="block text-sm font-medium text-gray-700">GSTIN (15 Digits)</label>
-                            <input type="text" id="gstin" name="gstin" 
+                            <input type="text" id="gstin" name="gstin"
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
                         </div>
-                        
+
                         <div>
                             <label for="state" class="block text-sm font-medium text-gray-700">State</label>
                             <select id="state" name="state" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
@@ -209,8 +204,8 @@ $conn->close();
                         </div>
                         <div>
                             <label for="state_code" class="block text-sm font-medium text-gray-700">State Code</label>
-                            <input type="text" id="state_code" name="state_code" 
-                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-gray-100" 
+                            <input type="text" id="state_code" name="state_code"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-gray-100"
                                    readonly>
                         </div>
                         <div>
@@ -234,7 +229,7 @@ $conn->close();
 
             <!-- Right Column: List of Companies -->
             <div class="lg:col-span-2">
-                
+
                 <!-- Search Bar -->
                 <div class="bg-white shadow-md rounded-lg p-4 mb-6">
                     <form action="companies.php" method="GET" class="flex gap-4">
@@ -288,7 +283,7 @@ $conn->close();
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($company['state']); ?></td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <a href="edit-company.php?id=<?php echo $company['id']; ?>&<?php echo $query_string; ?>" class="text-blue-600 hover:text-blue-900">Edit</a>
-                                            <a href="delete.php?type=company&id=<?php echo $company['id']; ?>&<?php echo $query_string; ?>" 
+                                            <a href="delete.php?type=company&id=<?php echo $company['id']; ?>&<?php echo $query_string; ?>"
                                                class="text-red-600 hover:text-red-900 ml-4"
                                                onclick="return confirm('Are you sure you want to delete this company?');">Delete</a>
                                         </td>

@@ -28,16 +28,7 @@ if (!in_array($status, $allowed_statuses)) {
 }
 
 // --- 3. Database Connection ---
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "invoicer_db";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-if ($conn->connect_error) {
-    echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
-    exit();
-}
+require_once 'db.php';
 
 // --- 4. Update the Invoice ---
 // We check BOTH invoice_id AND user_id for security
